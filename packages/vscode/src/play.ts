@@ -1,9 +1,9 @@
 import type { StatusBarItem, TextDocument, Uri } from 'vscode'
-import { CancellationTokenSource, Range, Selection, StatusBarAlignment, ThemeColor, commands, window } from 'vscode'
+import { CancellationTokenSource, Range, Selection, StatusBarAlignment, ThemeColor, ViewColumn, commands, window } from 'vscode'
 import type { ControlledPromise } from '@antfu/utils'
 import { createControlledPromise } from '@antfu/utils'
 import { manager } from './manager'
-import { resolveDoc } from './utils'
+import { openPlayEditor, resolveDoc } from './utils'
 
 let token: CancellationTokenSource | undefined
 let pausePromise: ControlledPromise<void> | undefined
@@ -39,9 +39,10 @@ export async function continuePause() {
 }
 
 export async function playStart(arg?: TextDocument | Uri) {
-  const { doc, editor } = await resolveDoc(arg)
-  if (!doc || !editor)
+  const { doc, editor: docEditor } = await resolveDoc(arg)
+  if (!doc || !docEditor)
     return
+  const editor = await openPlayEditor(doc)
 
   if (token) {
     window.showErrorMessage('reTypewriter: Already playing')
@@ -113,6 +114,7 @@ export async function playStart(arg?: TextDocument | Uri) {
         title: 'Continue',
         command: 'retypewriter.continue',
       }
+      window.showInformationMessage(`1232${token}`)
     }
     const command = commands.registerCommand('type', ({ text } = {}) => {
       if (!text)
@@ -177,6 +179,7 @@ export async function playStart(arg?: TextDocument | Uri) {
     }
   }
 
+  await editor.document.save()
   status?.dispose()
   token = undefined
   updateContext()
